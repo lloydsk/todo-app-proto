@@ -71,7 +71,48 @@ generate_go() {
         --go-grpc_opt=paths=source_relative \
         "${PROTO_DIR}/todo/v1/todo.proto"
     
+    # Create or update go.mod for generated code
+    create_go_mod
+    
     log_info "Go code generated in ${GO_OUTPUT}/todo/v1/"
+}
+
+# Create go.mod file for generated Go code
+create_go_mod() {
+    local GO_OUTPUT="${OUTPUT_DIR}/go"
+    local GO_MOD_FILE="${GO_OUTPUT}/go.mod"
+    
+    if [ ! -f "${GO_MOD_FILE}" ]; then
+        log_info "Creating go.mod for generated Go code..."
+        
+        cat > "${GO_MOD_FILE}" << EOF
+module github.com/todo-app/todo-app-proto/gen/go
+
+go 1.21
+
+require (
+	google.golang.org/grpc v1.62.1
+	google.golang.org/protobuf v1.32.0
+)
+
+require (
+	github.com/golang/protobuf v1.5.3 // indirect
+	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
+)
+EOF
+        
+        # Initialize go.sum if go is available
+        if command -v go &> /dev/null; then
+            cd "${GO_OUTPUT}" && go mod tidy && cd - > /dev/null
+        fi
+        
+        log_info "go.mod created successfully"
+    else
+        log_info "go.mod already exists, skipping creation"
+    fi
 }
 
 # Clean output directory
