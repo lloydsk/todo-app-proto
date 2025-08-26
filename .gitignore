@@ -1,0 +1,31 @@
+# Generated code
+gen/
+*.pb.go
+*_grpc.pb.go
+
+# Build artifacts
+build/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Dependencies (if we add language-specific deps later)
+node_modules/
+__pycache__/
+*.pyc

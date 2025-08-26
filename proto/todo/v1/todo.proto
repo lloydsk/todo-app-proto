@@ -1,0 +1,445 @@
+syntax = "proto3";
+
+package todo.v1;
+
+option go_package = "github.com/todo-app/proto/gen/go/todo/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// User represents a user in the system
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  UserRole role = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  int64 version = 7; // For optimistic locking and sync
+  bool is_deleted = 8; // Soft delete flag
+}
+
+// Task represents a todo task
+message Task {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string assignee_id = 4;
+  TaskStatus status = 5;
+  TaskPriority priority = 6;
+  repeated string category_ids = 7;
+  repeated string tag_ids = 8;
+  google.protobuf.Timestamp due_date = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  int64 version = 12; // For optimistic locking and sync
+  bool is_deleted = 13; // Soft delete flag
+  repeated TaskHistoryEntry history = 14;
+  repeated TaskReminder reminders = 15;
+}
+
+// Category represents a task category
+message Category {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string color = 4; // Hex color code
+  string parent_id = 5; // For hierarchy
+  bool is_public = 6; // Public vs private categories
+  string creator_id = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  int64 version = 10;
+  bool is_deleted = 11;
+}
+
+// Tag represents a task tag
+message Tag {
+  string id = 1;
+  string name = 2;
+  string color = 3; // Hex color code
+  string creator_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  int64 version = 7;
+  bool is_deleted = 8;
+}
+
+// TaskReminder represents a reminder for a task
+message TaskReminder {
+  string id = 1;
+  string task_id = 2;
+  google.protobuf.Timestamp remind_at = 3;
+  ReminderType type = 4;
+  bool is_sent = 5;
+  google.protobuf.Timestamp created_at = 6;
+  int64 version = 7;
+  bool is_deleted = 8;
+}
+
+// UserRole represents user access levels
+enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0;
+  USER_ROLE_USER = 1;
+  USER_ROLE_ADMIN = 2;
+}
+
+// TaskStatus represents the current state of a task
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_OPEN = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_COMPLETED = 3;
+  TASK_STATUS_UNDOABLE = 4;
+}
+
+// TaskPriority represents task importance
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW = 1;
+  TASK_PRIORITY_MEDIUM = 2;
+  TASK_PRIORITY_HIGH = 3;
+  TASK_PRIORITY_URGENT = 4;
+}
+
+// ReminderType represents reminder patterns
+enum ReminderType {
+  REMINDER_TYPE_UNSPECIFIED = 0;
+  REMINDER_TYPE_ONCE = 1;
+  REMINDER_TYPE_DAILY = 2;
+  REMINDER_TYPE_WEEKLY = 3;
+  REMINDER_TYPE_MONTHLY = 4;
+}
+
+// TaskHistoryEntry represents a single event in task history
+message TaskHistoryEntry {
+  string id = 1;
+  string task_id = 2;
+  string action = 3; // "created", "completed", "marked_undoable", etc.
+  string actor_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  string details = 6; // Optional additional information
+}
+
+// Admin Service - for web interface
+service AdminService {
+  // User management
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  
+  // Task management
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  
+  // Task history
+  rpc GetTaskHistory(GetTaskHistoryRequest) returns (GetTaskHistoryResponse);
+}
+
+// User Service - for mobile interface  
+service UserService {
+  // Authentication
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  
+  // User tasks
+  rpc GetMyTasks(GetMyTasksRequest) returns (GetMyTasksResponse);
+  rpc CompleteTask(CompleteTaskRequest) returns (CompleteTaskResponse);
+  rpc MarkTaskUndoable(MarkTaskUndoableRequest) returns (MarkTaskUndoableResponse);
+  rpc UpdateTaskProgress(UpdateTaskProgressRequest) returns (UpdateTaskProgressResponse);
+  
+  // Sync operations for offline support
+  rpc SyncTasks(SyncTasksRequest) returns (SyncTasksResponse);
+  rpc GetTaskUpdates(GetTaskUpdatesRequest) returns (GetTaskUpdatesResponse);
+}
+
+// Category and Tag Management Service (used by both Admin and User services)
+service CategoryService {
+  rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse);
+  rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse);
+}
+
+service TagService {
+  rpc CreateTag(CreateTagRequest) returns (CreateTagResponse);
+  rpc ListTags(ListTagsRequest) returns (ListTagsResponse);
+  rpc UpdateTag(UpdateTagRequest) returns (UpdateTagResponse);
+  rpc DeleteTag(DeleteTagRequest) returns (DeleteTagResponse);
+}
+
+// Common authentication and pagination messages
+message AuthContext {
+  string user_id = 1;
+  UserRole role = 2;
+  repeated string permissions = 3;
+}
+
+message PageInfo {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message PageResponse {
+  string next_page_token = 1;
+  int32 total_count = 2;
+}
+
+// Admin Service Messages
+message ListUsersRequest {
+  PageInfo page_info = 1;
+  string search_query = 2; // Optional search filter
+  bool include_deleted = 3; // Include soft deleted users
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  PageResponse page_response = 2;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message CreateTaskRequest {
+  string title = 1;
+  optional string description = 2;
+  optional string assignee_id = 3;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message ListTasksRequest {
+  string assignee_id = 1; // Optional filter by assignee
+  TaskStatus status = 2;   // Optional filter by status
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message GetTaskRequest {
+  string task_id = 1;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message UpdateTaskRequest {
+  string task_id = 1;
+  string title = 2;
+  optional string description = 3;
+  optional string assignee_id = 4;  // Optional - allows unassigning
+  TaskStatus status = 5;
+}
+
+message UpdateTaskResponse {
+  Task task = 1;
+}
+
+message GetTaskHistoryRequest {
+  string task_id = 1;
+}
+
+message GetTaskHistoryResponse {
+  repeated TaskHistoryEntry history = 1;
+}
+
+// User Service Messages
+// Standardized authentication messages
+message LoginRequest {
+  string email = 1; // Use email instead of username for consistency
+  string password = 2;
+  string device_id = 3; // For session tracking
+}
+
+message LoginResponse {
+  string access_token = 1; // JWT token
+  string refresh_token = 2; // For token renewal
+  User user = 3;
+  int64 expires_in = 4; // Token expiry in seconds
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  int64 expires_in = 2;
+}
+
+message GetMyTasksRequest {
+  string user_id = 1;
+}
+
+message GetMyTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message CompleteTaskRequest {
+  string task_id = 1;
+  string user_id = 2;
+}
+
+message CompleteTaskResponse {
+  Task task = 1;
+}
+
+message MarkTaskUndoableRequest {
+  string task_id = 1;
+  string user_id = 2;
+  string reason = 3; // Optional reason
+}
+
+message MarkTaskUndoableResponse {
+  Task task = 1;
+}
+
+message UpdateTaskProgressRequest {
+  string task_id = 1;
+  TaskStatus status = 2;
+  string progress_notes = 3;
+}
+
+message UpdateTaskProgressResponse {
+  Task task = 1;
+}
+
+// Sync messages for offline support
+message SyncTasksRequest {
+  int64 last_sync_version = 1;
+  repeated TaskUpdate local_changes = 2;
+}
+
+message SyncTasksResponse {
+  repeated Task updated_tasks = 1;
+  repeated string deleted_task_ids = 2;
+  int64 server_version = 3;
+  repeated TaskConflict conflicts = 4;
+}
+
+message TaskUpdate {
+  string task_id = 1;
+  TaskStatus status = 2;
+  int64 client_version = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message TaskConflict {
+  string task_id = 1;
+  Task server_version = 2;
+  Task client_version = 3;
+  ConflictResolution suggested_resolution = 4;
+}
+
+enum ConflictResolution {
+  CONFLICT_RESOLUTION_UNSPECIFIED = 0;
+  CONFLICT_RESOLUTION_SERVER_WINS = 1;
+  CONFLICT_RESOLUTION_CLIENT_WINS = 2;
+  CONFLICT_RESOLUTION_MERGE = 3;
+}
+
+message GetTaskUpdatesRequest {
+  int64 since_version = 1;
+}
+
+message GetTaskUpdatesResponse {
+  repeated Task updated_tasks = 1;
+  int64 current_version = 2;
+}
+
+// Category service messages
+message CreateCategoryRequest {
+  string name = 1;
+  optional string description = 2;
+  optional string color = 3;
+  optional string parent_id = 4;
+  bool is_public = 5;  // Explicit visibility choice
+}
+
+message CreateCategoryResponse {
+  Category category = 1;
+}
+
+message ListCategoriesRequest {
+  PageInfo page_info = 1;
+  bool include_deleted = 2;
+  bool public_only = 3;
+}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+  PageResponse page_response = 2;
+}
+
+message UpdateCategoryRequest {
+  string category_id = 1;
+  string name = 2;
+  optional string description = 3;
+  optional string color = 4;
+  optional string parent_id = 5;  // Key field - allows "unset" vs "remove parent"
+  bool is_public = 6;
+  int64 version = 7; // For optimistic locking
+}
+
+message UpdateCategoryResponse {
+  Category category = 1;
+}
+
+message DeleteCategoryRequest {
+  string category_id = 1;
+  int64 version = 2;
+}
+
+message DeleteCategoryResponse {
+  bool success = 1;
+}
+
+// Tag service messages
+message CreateTagRequest {
+  string name = 1;
+  optional string color = 2;
+}
+
+message CreateTagResponse {
+  Tag tag = 1;
+}
+
+message ListTagsRequest {
+  PageInfo page_info = 1;
+  bool include_deleted = 2;
+  string search_query = 3;
+}
+
+message ListTagsResponse {
+  repeated Tag tags = 1;
+  PageResponse page_response = 2;
+}
+
+message UpdateTagRequest {
+  string tag_id = 1;
+  string name = 2;
+  optional string color = 3;
+  int64 version = 4;
+}
+
+message UpdateTagResponse {
+  Tag tag = 1;
+}
+
+message DeleteTagRequest {
+  string tag_id = 1;
+  int64 version = 2;
+}
+
+message DeleteTagResponse {
+  bool success = 1;
+}
