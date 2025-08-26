@@ -19,6 +19,7 @@ This document outlines the development workflow for the Todo App Protocol Buffer
    ```bash
    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
    ```
 
 ## Development Process

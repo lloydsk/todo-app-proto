@@ -19,9 +19,16 @@ docs/
 
 ## Supported Languages
 
-- Go
+- Go (with gRPC and ConnectRPC support)
 - TypeScript/JavaScript (future)
 - Python (future)
+
+## ConnectRPC Support
+
+This repository generates both traditional gRPC and ConnectRPC clients. ConnectRPC allows your services to be accessible via:
+- gRPC protocol (binary, efficient)  
+- HTTP/1.1 and HTTP/2 with JSON (web-friendly)
+- Same service implementation handles both protocols
 
 ## Usage
 

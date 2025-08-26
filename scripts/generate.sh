@@ -58,17 +58,26 @@ generate_go() {
         exit 1
     fi
     
+    # Check if protoc-gen-connect-go is installed
+    if ! command -v protoc-gen-connect-go &> /dev/null; then
+        log_error "protoc-gen-connect-go is not installed."
+        log_info "Install with: go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest"
+        exit 1
+    fi
+    
     # Create output directory
     GO_OUTPUT="${OUTPUT_DIR}/go"
     mkdir -p "${GO_OUTPUT}"
     
-    # Generate Go protobuf and gRPC code
+    # Generate Go protobuf, gRPC, and Connect code
     protoc \
         --proto_path="${PROTO_DIR}" \
         --go_out="${GO_OUTPUT}" \
         --go_opt=paths=source_relative \
         --go-grpc_out="${GO_OUTPUT}" \
         --go-grpc_opt=paths=source_relative \
+        --connect-go_out="${GO_OUTPUT}" \
+        --connect-go_opt=paths=source_relative \
         "${PROTO_DIR}/todo/v1/todo.proto"
     
     # Create or update go.mod for generated code
@@ -91,6 +100,7 @@ module github.com/todo-app/todo-app-proto/gen/go
 go 1.21
 
 require (
+	connectrpc.com/connect v1.16.2
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.32.0
 )
