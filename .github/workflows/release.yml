@@ -142,12 +142,15 @@ jobs:
     name: Update Go Module Tags
     runs-on: ubuntu-latest
     needs: [validate-and-build, create-release]
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Set up Git
       run: |
