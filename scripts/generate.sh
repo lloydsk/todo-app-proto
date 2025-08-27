@@ -95,7 +95,7 @@ create_go_mod() {
         log_info "Creating go.mod for generated Go code..."
         
         cat > "${GO_MOD_FILE}" << EOF
-module github.com/todo-app/todo-app-proto/gen/go
+module github.com/lloydsk/todo-app-proto/gen/go
 
 go 1.21
 
