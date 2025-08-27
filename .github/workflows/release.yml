@@ -157,9 +157,44 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
-    - name: Create Go module tag
+    - name: Install Protocol Buffer Compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: Install Go protobuf plugins
+      run: |
+        go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+        go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+        go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+        
+    - name: Create release branch and commit generated code
       run: |
         VERSION="${{ needs.validate-and-build.outputs.version }}"
-        # Create a tag specifically for the Go module
+        RELEASE_BRANCH="release/${VERSION}"
+        
+        # Create and checkout release branch
+        git checkout -b "${RELEASE_BRANCH}"
+        
+        # Generate the Go code
+        ./scripts/generate.sh go
+        
+        # Commit generated code to release branch
+        git add gen/go/
+        git commit -m "Generate Go protobuf code for ${VERSION}
+        
+        🤖 Generated with [Claude Code](https://claude.ai/code)
+        
+        Co-Authored-By: Claude <noreply@anthropic.com>"
+        
+        # Push release branch
+        git push origin "${RELEASE_BRANCH}"
+        
+        # Create the Go module tag pointing to this release branch commit
         git tag "gen/go/${VERSION}"
         git push origin "gen/go/${VERSION}"
