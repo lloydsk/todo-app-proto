@@ -184,8 +184,8 @@ jobs:
         # Generate the Go code
         ./scripts/generate.sh go
         
-        # Commit generated code to release branch
-        git add gen/go/
+        # Commit generated code to release branch (force add since gen/ is in .gitignore)
+        git add -f gen/go/
         git commit -m "Generate Go protobuf code for ${VERSION}
         
         🤖 Generated with [Claude Code](https://claude.ai/code)
